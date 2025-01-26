@@ -25,6 +25,10 @@ if "chunk_size" not in st.session_state:
     st.session_state.chunk_size = 4000
 if "chunk_overlap" not in st.session_state:
     st.session_state.chunk_overlap = 200
+if "models" not in st.session_state:
+    st.session_state.models = []
+if "selected_model" not in st.session_state:
+    st.session_state.selected_model = "llama3.2:latest"
 
 
 class StreamHandler(BaseCallbackHandler):
@@ -40,6 +44,27 @@ class StreamHandler(BaseCallbackHandler):
         self.container.markdown(self.text)
 
 
+def get_ollama_models():
+    """Fetch available models from Ollama API"""
+    try:
+        response = requests.get("http://localhost:11434/api/tags")
+        if response.status_code == 200:
+            models = [model["name"] for model in response.json()["models"]]
+            if not models:  # If no models are found
+                st.warning("No Ollama models found. Using default model.")
+                return ["llama3.2:latest"]
+            return models
+        else:
+            st.error("Failed to connect to Ollama API. Using default model.")
+            return ["llama3.2:latest"]
+    except requests.exceptions.ConnectionError:
+        st.error("Could not connect to Ollama. Please ensure Ollama is running.")
+        return ["llama3.2:latest"]
+    except Exception as e:
+        st.error(f"Error fetching Ollama models: {str(e)}")
+        return ["llama3.2:latest"]  # Fallback to default
+
+
 def process_with_deepseek(text):
     """Process markdown text with deepseek model for refinement using Langchain"""
     try:
@@ -53,11 +78,28 @@ def process_with_deepseek(text):
         # Split text into chunks
         chunks = text_splitter.split_text(text)
 
-        # Create Ollama model instance with LangChain
-        llm = OllamaLLM(
-            model="deepseek-r1:32b",
-            temperature=0.7,
-        )
+        # Verify model availability before processing
+        try:
+            # Test model availability
+            test_llm = OllamaLLM(
+                model=st.session_state.selected_model,
+                temperature=0.7,
+            )
+            test_response = test_llm.invoke("test")
+
+            # If test passes, create actual LLM instance
+            llm = OllamaLLM(
+                model=st.session_state.selected_model,
+                temperature=0.7,
+            )
+        except Exception as model_error:
+            st.error(f"Error with selected model: {str(model_error)}")
+            st.info("Falling back to default model (llama3.2:latest)")
+            # Fallback to default model
+            llm = OllamaLLM(
+                model="llama3.2:latest",
+                temperature=0.7,
+            )
 
         # Create prompt template
         prompt = ChatPromptTemplate.from_template(
@@ -102,8 +144,43 @@ Focus on:
         return None
 
 
+# Fetch available models on app start
+if not st.session_state.models:
+    st.session_state.models = get_ollama_models()
+
 # Streamlit app title
 st.title("HTML to Markdown Converter")
+
+# Sidebar for AI settings
+with st.sidebar:
+    st.header("AI Settings")
+
+    # Model selection
+    st.session_state.selected_model = st.selectbox(
+        "Select Ollama Model",
+        options=st.session_state.models,
+        index=st.session_state.models.index(st.session_state.selected_model),
+        help="Choose the Ollama model for markdown refinement",
+    )
+
+    # Context window controls
+    st.subheader("Context Window Settings")
+    st.session_state.chunk_size = st.slider(
+        "Chunk Size",
+        min_value=1000,
+        max_value=8000,
+        value=st.session_state.chunk_size,
+        step=500,
+        help="Size of text chunks to process (in characters)",
+    )
+    st.session_state.chunk_overlap = st.slider(
+        "Chunk Overlap",
+        min_value=0,
+        max_value=1000,
+        value=st.session_state.chunk_overlap,
+        step=50,
+        help="Overlap between chunks to maintain context",
+    )
 
 # Main container with columns
 with st.container():
@@ -142,26 +219,6 @@ with st.container():
                 if st.button("Remove", key=f"remove_{i}"):
                     st.session_state.urls.pop(i)
                     st.rerun()
-
-        # Context window controls
-        st.write("---")
-        st.write("**Context Window Settings**")
-        st.session_state.chunk_size = st.slider(
-            "Chunk Size",
-            min_value=1000,
-            max_value=8000,
-            value=st.session_state.chunk_size,
-            step=500,
-            help="Size of text chunks to process (in characters)",
-        )
-        st.session_state.chunk_overlap = st.slider(
-            "Chunk Overlap",
-            min_value=0,
-            max_value=1000,
-            value=st.session_state.chunk_overlap,
-            step=50,
-            help="Overlap between chunks to maintain context",
-        )
 
         # Convert button for batch processing
         if st.button("Convert All"):

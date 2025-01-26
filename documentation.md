@@ -28,9 +28,12 @@ LangChain provides a framework for developing applications powered by language m
    - Ollama must be installed and running on your system
    - Visit [Ollama.com](https://ollama.com) for installation instructions
 
-2. Required Model
-   - Pull the deepseek model: `ollama pull deepseek-coder:6.7b`
-   - This model is used for markdown refinement in our application
+2. Models
+   - The application dynamically fetches available models from your Ollama installation
+   - Default model: `llama3.2:latest`
+   - You can install additional models using: `ollama pull <model-name>`
+   - Models can be selected from the sidebar in the application
+   - Automatic fallback to default model if selected model is unavailable
 
 #### Installation
 ```bash
@@ -85,11 +88,22 @@ def process_with_deepseek(text):
 ```
 
 #### Key Features
+- Dynamic model selection from installed Ollama models
 - Text splitting for large documents
 - Streaming token output
 - Progress tracking
-- Context window management
+- Context window management in sidebar
 - Chunk overlap for better context preservation
+
+#### Model Selection
+The application integrates with the Ollama API to provide dynamic model selection:
+- Available models are fetched from `http://localhost:11434/api/tags`
+- Models can be selected from the AI Settings sidebar
+- Context window settings are also available in the sidebar for fine-tuning
+- Error handling for model availability:
+  - Tests model availability before processing
+  - Falls back to default model (llama3.2:latest) if selected model fails
+  - Provides clear error messages and status updates
 
 ### Other Required Libraries
 - `streamlit`: Web application framework
