@@ -1,25 +1,59 @@
 # Project: Streamlit App for HTML to Markdown Conversion
 
 ## Overview & Core Features
-- The app will allow users to input URLs containing API documentation in HTML format.
-- It will scrape the HTML content from these URLs and convert it into markdown using BeautifulSoup.
-- A preview of the generated markdown document will be displayed on the right side of the app.
-- A word count token counter will also be shown alongside the markdown preview.
+- Multiple URL Processing:
+  - Users can add multiple URLs containing API documentation
+  - List interface for managing URLs (add/remove)
+  - Batch processing of all URLs
+- HTML to Markdown Conversion:
+  - Scrape HTML content from URLs using BeautifulSoup
+  - Convert HTML to markdown using markdownify
+  - Preview of generated markdown documents
+- AI-Powered Refinement:
+  - Use LangChain with Ollama's deepseek-coder model
+  - Split large documents into manageable chunks
+  - Process with configurable context windows
+  - Stream token-by-token output with progress tracking
+  - Make documentation concise and clear
+  - Display both original and refined versions
+- File Output:
+  - Save refined markdown to files
+  - Automatic naming based on date/time
+  - Option for custom filenames
+  - Word count token counter
 
 ## Technical Stack & Architecture
-- **Frontend**: Streamlit for creating the web interface.
-- **Backend**: Python for handling URL input, HTML scraping, and conversion to markdown.
+- **Frontend**: 
+  - Streamlit for web interface
+  - Two-column layout with URL list and preview
+- **Backend**: 
+  - Python for core functionality
+  - Ollama integration for AI refinement
 - **Libraries**:
-  - `streamlit`: For building the user interface.
-  - `requests`: For fetching HTML content from URLs.
-  - `beautifulsoup4`: For parsing HTML and converting it into markdown.
-  - `markdownify`: For converting HTML to markdown.
+  - `streamlit`: UI components
+  - `requests`: URL content fetching
+  - `beautifulsoup4`: HTML parsing
+  - `markdownify`: HTML to markdown conversion
+  - `ollama`: AI model integration
 
-## Data Models & API Design
-- No specific data models are required as the app will primarily handle URL inputs and outputs.
-- The app will not interact with any external APIs other than those specified by the user for fetching HTML content.
+## Data Flow
+1. URL Collection:
+   - User adds URLs to list
+   - Validate URLs and manage list state
+2. Content Processing:
+   - Fetch HTML content from each URL
+   - Convert to markdown format
+   - Combine markdown documents
+3. AI Refinement:
+   - Process combined content with deepseek-r1
+   - Generate refined version
+4. Output:
+   - Save to markdown file
+   - Display preview and statistics
 
 ## Decisions & Clarifications
-- [1/26/2025] Chosen Streamlit for its simplicity and ease of use in creating web applications.
-- [1/26/2025] Selected BeautifulSoup for HTML parsing due to its robustness and ease of integration with Python.
-- [1/26/2025] Decided to use `markdownify` for converting HTML to markdown as it provides a straightforward way to handle the conversion process.
+- [1/26/2025] Chosen Streamlit for its simplicity and ease of use in creating web applications
+- [1/26/2025] Selected BeautifulSoup for HTML parsing due to its robustness
+- [1/26/2025] Decided to use markdownify for HTML to markdown conversion
+- [1/26/2025] Selected deepseek-r1 model for its superior reasoning capabilities
+- [1/26/2025] Implemented file output for persistent storage of refined documentation
