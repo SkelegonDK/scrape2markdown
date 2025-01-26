@@ -7,7 +7,7 @@
 
 ## Developer Tasks (Require approval to modify)
 - [ ] Task assigned to developer
-
+r
 ## In Progress
 - [x] Implement deepseek markdown cleanup
   - Added AI refinement functionality
@@ -43,6 +43,15 @@
   - Implemented StreamHandler for token-by-token output
   - Added progress bar for chunk processing
   - Last updated: 1/26/2025, 9:37 PM
+
+## Completed
+- [x] Implement Ollama model selection
+  - Added model list fetching from Ollama API
+  - Created sidebar model selector with error handling
+  - Updated AI processing to use selected model
+  - Added fallback to default model (llama3.2:latest)
+  - Added model availability testing
+  - Last updated: 1/26/2025, 11:12 PM
 
 ## Next Up
 - [ ] Test the enhanced functionality with various document sizes
