@@ -5,14 +5,12 @@ from bs4 import BeautifulSoup
 import requests
 from markdownify import markdownify
 from langchain_core.prompts import ChatPromptTemplate
-
 from langchain_ollama.llms import OllamaLLM
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.callbacks.base import BaseCallbackHandler
 
 # Configure the app for wide mode
 st.set_page_config(layout="wide")
-
 
 # Initialize session state variables if they don't exist
 if "urls" not in st.session_state:
@@ -21,14 +19,18 @@ if "original_markdown" not in st.session_state:
     st.session_state.original_markdown = ""
 if "refined_markdown" not in st.session_state:
     st.session_state.refined_markdown = ""
-if "chunk_size" not in st.session_state:
-    st.session_state.chunk_size = 4000
-if "chunk_overlap" not in st.session_state:
-    st.session_state.chunk_overlap = 200
 if "models" not in st.session_state:
     st.session_state.models = []
 if "selected_model" not in st.session_state:
     st.session_state.selected_model = "llama3.2:latest"
+if "context_info" not in st.session_state:
+    st.session_state.context_info = {
+        "max_context": 0,
+        "chunk_size": 0,
+        "chunk_overlap": 0,
+        "total_tokens": 0,
+        "num_chunks": 0,
+    }
 
 
 class StreamHandler(BaseCallbackHandler):
@@ -68,38 +70,35 @@ def get_ollama_models():
 def process_with_deepseek(text):
     """Process markdown text with deepseek model for refinement using Langchain"""
     try:
-        # Create text splitter for handling large documents
+        # Create LLM instance with dynamic context
+        llm = OllamaLLM(
+            model=st.session_state.selected_model,
+            temperature=0.7,
+        )
+
+        # Get max context and set optimal chunks
+        max_context = llm.get_model_default_max_length() or 4096  # Fallback to 4096
+        chunk_size = max_context - 1000  # Buffer for prompt
+        chunk_overlap = int(chunk_size * 0.1)  # 10% overlap
+
+        # Create text splitter with dynamic settings
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=st.session_state.chunk_size,
-            chunk_overlap=st.session_state.chunk_overlap,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
             length_function=len,
         )
 
         # Split text into chunks
         chunks = text_splitter.split_text(text)
 
-        # Verify model availability before processing
-        try:
-            # Test model availability
-            test_llm = OllamaLLM(
-                model=st.session_state.selected_model,
-                temperature=0.7,
-            )
-            test_response = test_llm.invoke("test")
-
-            # If test passes, create actual LLM instance
-            llm = OllamaLLM(
-                model=st.session_state.selected_model,
-                temperature=0.7,
-            )
-        except Exception as model_error:
-            st.error(f"Error with selected model: {str(model_error)}")
-            st.info("Falling back to default model (llama3.2:latest)")
-            # Fallback to default model
-            llm = OllamaLLM(
-                model="llama3.2:latest",
-                temperature=0.7,
-            )
+        # Update context info
+        st.session_state.context_info = {
+            "max_context": max_context,
+            "chunk_size": chunk_size,
+            "chunk_overlap": chunk_overlap,
+            "total_tokens": len(text.split()),  # Approximate token count
+            "num_chunks": len(chunks),
+        }
 
         # Create prompt template
         prompt = ChatPromptTemplate.from_template(
@@ -151,7 +150,6 @@ if not st.session_state.models:
 # Streamlit app title
 st.title("HTML to Markdown Converter")
 
-# Sidebar for AI settings
 with st.sidebar:
     st.header("AI Settings")
 
@@ -163,24 +161,36 @@ with st.sidebar:
         help="Choose the Ollama model for markdown refinement",
     )
 
-    # Context window controls
-    st.subheader("Context Window Settings")
-    st.session_state.chunk_size = st.slider(
-        "Chunk Size",
-        min_value=1000,
-        max_value=8000,
-        value=st.session_state.chunk_size,
-        step=500,
-        help="Size of text chunks to process (in characters)",
-    )
-    st.session_state.chunk_overlap = st.slider(
-        "Chunk Overlap",
-        min_value=0,
-        max_value=1000,
-        value=st.session_state.chunk_overlap,
-        step=50,
-        help="Overlap between chunks to maintain context",
-    )
+    # Context information display
+    st.header("Context Information")
+    if st.session_state.context_info["max_context"] > 0:
+        st.metric(
+            "Max Context Size", f"{st.session_state.context_info['max_context']} tokens"
+        )
+        st.metric("Chunk Size", f"{st.session_state.context_info['chunk_size']} tokens")
+        st.metric(
+            "Chunk Overlap", f"{st.session_state.context_info['chunk_overlap']} tokens"
+        )
+        st.metric("Number of Chunks", st.session_state.context_info["num_chunks"])
+
+        # Calculate and display context utilization
+        total_context_used = (
+            st.session_state.context_info["chunk_size"]
+            * st.session_state.context_info["num_chunks"]
+        )
+        context_utilization = (
+            total_context_used / st.session_state.context_info["max_context"]
+        ) * 100
+
+        st.metric("Context Utilization", f"{context_utilization:.1f}%")
+
+        # Show warning if high utilization
+        if context_utilization > 90:
+            st.warning(
+                "High context utilization! Consider processing in smaller batches."
+            )
+    else:
+        st.info("Context information will appear after processing text.")
 
 # Main container with columns
 with st.container():
