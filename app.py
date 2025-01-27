@@ -1,4 +1,3 @@
-import os
 from datetime import datetime
 import streamlit as st
 from bs4 import BeautifulSoup
@@ -8,6 +7,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama.llms import OllamaLLM
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.callbacks.base import BaseCallbackHandler
+from model_context import get_model_context, MODEL_CONTEXTS
 
 # Configure the app for wide mode
 st.set_page_config(layout="wide")
@@ -32,6 +32,24 @@ if "context_info" not in st.session_state:
         "num_chunks": 0,
     }
 
+prompt = ChatPromptTemplate.from_template(
+    """Polish and clean up this markdown documentation. Preserve all technical information while fixing any formatting or scraping artifacts:
+
+{text}
+
+Follow these guidelines:
+- Fix any broken code snippets, ensuring they are complete and properly formatted
+- Remove scraping artifacts (broken links, incomplete titles, orphaned words)
+- Maintain all technical details and explanations
+- Ensure proper markdown hierarchy and structure
+- Keep the documentation comprehensive and detailed
+- Preserve all working examples and use cases
+- Fix any fragmented sentences or paragraphs
+- DO NOT summarize or remove technical content
+
+Focus on cleanup and polish, not summarization."""
+)
+
 
 class StreamHandler(BaseCallbackHandler):
     """Callback handler for streaming LLM responses to Streamlit"""
@@ -44,6 +62,14 @@ class StreamHandler(BaseCallbackHandler):
         """Callback for new tokens from the LLM"""
         self.text += token
         self.container.markdown(self.text)
+
+
+def estimate_tokens(text):
+    """Estimate token count using a simple approximation"""
+    # Average English word is about 1.3 tokens
+    words = len(text.split())
+    estimated_tokens = int(words * 1.3)
+    return estimated_tokens
 
 
 def get_ollama_models():
@@ -68,73 +94,49 @@ def get_ollama_models():
 
 
 def process_with_deepseek(text):
-    """Process markdown text with deepseek model for refinement using Langchain"""
     try:
-        # Create LLM instance with dynamic context
         llm = OllamaLLM(
             model=st.session_state.selected_model,
             temperature=0.7,
         )
 
-        # Get max context and set optimal chunks
-        max_context = llm.get_model_default_max_length() or 4096  # Fallback to 4096
-        chunk_size = max_context - 1000  # Buffer for prompt
-        chunk_overlap = int(chunk_size * 0.1)  # 10% overlap
+        # Adjust chunk parameters
+        max_context = get_model_context(st.session_state.selected_model)
+        prompt_tokens = 1000  # Increased prompt reserve
+        chunk_size = (max_context - prompt_tokens) // 3  # More conservative chunking
+        chunk_overlap = int(chunk_size * 0.2)  # Increased overlap
 
-        # Create text splitter with dynamic settings
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
             length_function=len,
+            separators=[
+                "\n## ",
+                "\n\n",
+                "\n",
+                " ",
+                "",
+            ],  # Better markdown structure preservation
         )
 
-        # Split text into chunks
         chunks = text_splitter.split_text(text)
 
-        # Update context info
-        st.session_state.context_info = {
-            "max_context": max_context,
-            "chunk_size": chunk_size,
-            "chunk_overlap": chunk_overlap,
-            "total_tokens": len(text.split()),  # Approximate token count
-            "num_chunks": len(chunks),
-        }
-
-        # Create prompt template
-        prompt = ChatPromptTemplate.from_template(
-            """Please refine and clean up this markdown documentation to make it more concise and clear, while preserving all important information:
-
-{text}
-
-Focus on:
-1. Removing redundant information
-2. Improving clarity and readability
-3. Maintaining technical accuracy
-4. Preserving all important details
-5. Ensuring proper markdown formatting"""
-        )
-
-        # Create a placeholder for streaming output
-        output_placeholder = st.empty()
-        stream_handler = StreamHandler(output_placeholder)
-
-        # Process each chunk and combine results
-        refined_text = ""
+        # Process chunks with better separation
+        refined_chunks = []
         progress_bar = st.progress(0)
 
         for i, chunk in enumerate(chunks):
-            # Update progress
             progress = (i + 1) / len(chunks)
             progress_bar.progress(progress)
 
-            # Process chunk with model using LangChain
             chain = prompt | llm
             response = chain.invoke(
-                {"text": chunk}, config={"callbacks": [stream_handler]}
+                {"text": chunk}, config={"callbacks": [StreamHandler(st.empty())]}
             )
+            refined_chunks.append(response.strip())
 
-            refined_text += response + "\n\n"
-
+        # Join chunks with proper spacing
+        refined_text = "\n\n".join(refined_chunks)
         progress_bar.empty()
         return refined_text
 
@@ -274,41 +276,31 @@ with st.container():
         if st.session_state.original_markdown:
             st.write("**Original Markdown Preview:**")
             st.markdown(st.session_state.original_markdown)
-            st.write(f"**Word Count: {st.session_state.original_word_count}**")
+
+            # Add token estimation here
+            token_count = estimate_tokens(st.session_state.original_markdown)
+            st.write(
+                f"**Word Count: {st.session_state.original_word_count} | Estimated Tokens: {token_count:,}**"
+            )
+
+            # Add context utilization
+            max_context = get_model_context(st.session_state.selected_model)
+            context_used = token_count / max_context
+            st.progress(min(context_used, 1.0), f"Context Usage: {context_used:.1%}")
+
+            if context_used > 0.9:
+                st.warning(
+                    "⚠️ Content may be close to or exceeding model's context limit"
+                )
 
         # Display refined version if available
         if st.session_state.refined_markdown:
+            st.write("---")  # Add separator
             st.write("**Refined Markdown Preview:**")
             st.markdown(st.session_state.refined_markdown)
-            st.write(f"**Refined Word Count: {st.session_state.refined_word_count}**")
+            refined_token_count = estimate_tokens(st.session_state.refined_markdown)
             st.write(
-                f"**Word Count Reduction: {st.session_state.original_word_count - st.session_state.refined_word_count} words**"
+                f"""**Refined Word Count: {st.session_state.refined_word_count} | 
+                Estimated Tokens: {refined_token_count:,} | 
+                Reduction: {((token_count - refined_token_count) / token_count) * 100:.1f}%**"""
             )
-
-            # File saving section
-            if st.session_state.original_markdown or st.session_state.refined_markdown:
-                st.write("---")
-                st.write("**Save to File**")
-                default_filename = (
-                    f"documentation_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                )
-                filename = st.text_input(
-                    "File name (without extension)", value=default_filename
-                )
-
-                save_cols = st.columns(2)
-                with save_cols[0]:
-                    if st.button("Save Original"):
-                        if st.session_state.original_markdown:
-                            filepath = f"{filename}_original.md"
-                            with open(filepath, "w") as f:
-                                f.write(st.session_state.original_markdown)
-                            st.success(f"Saved original markdown to {filepath}")
-
-                with save_cols[1]:
-                    if st.button("Save Refined"):
-                        if st.session_state.refined_markdown:
-                            filepath = f"{filename}_refined.md"
-                            with open(filepath, "w") as f:
-                                f.write(st.session_state.refined_markdown)
-                            st.success(f"Saved refined markdown to {filepath}")
