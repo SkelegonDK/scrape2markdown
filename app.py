@@ -2,6 +2,7 @@ from datetime import datetime
 import re
 import requests
 import streamlit as st
+import pyperclip
 from bs4 import BeautifulSoup
 from markdownify import markdownify
 
@@ -101,12 +102,11 @@ if "original_markdown" not in st.session_state:
     st.session_state.original_markdown = ""
 
 # Streamlit app title
-st.title("Page to Markdown")
+
 
 # Sidebar: URL management and controls
 with st.sidebar:
-    st.header("Document Sources")
-
+    st.title("Page2Markdown")
     st.subheader("Content Filtering")
 
     # Filter by class
@@ -216,13 +216,11 @@ if st.session_state.original_markdown:
 
     # Copy to clipboard button
     if st.button("Copy to Clipboard"):
-        st.write(
-            "<script>navigator.clipboard.writeText(`"
-            + st.session_state.original_markdown.replace("`", "\\`")
-            + "`);</script>",
-            unsafe_allow_html=True,
-        )
-        st.success("Copied to clipboard!")
+        try:
+            pyperclip.copy(st.session_state.original_markdown)
+            st.success("Text copied successfully!")
+        except Exception as e:
+            st.error(f"Failed to copy to clipboard: {str(e)}")
 
 else:
     st.info("Process some URLs to see the markdown preview.")
