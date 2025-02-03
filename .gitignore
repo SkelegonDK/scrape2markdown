@@ -1,2 +1,4 @@
 .vscode/PythonImportHelper-v2-Completion.json
 __pycache__/model_context.cpython-312.pyc
+mypy.ini
+.pylintrc
