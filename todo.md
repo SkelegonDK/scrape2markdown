@@ -2,13 +2,12 @@
 
 ## Current Goals
 - Priority 1: Streamline URL collection and markdown conversion
-- Priority 2: Improve user interface and workflow
-- Priority 3: Enhance export and preview features
-- Milestone: Create focused markdown conversion tool
+- Priority 2: Add URLs based on links in URL
+- Priority 3: Add LLM features for rewriting and filtering content.
+
 
 ## Developer Tasks (Require approval to modify)
-- [ ] Task assigned to developer
-- [ ] Update Copy to clipboard
+
 
 ## Completed
 - [x] Separate page-to-markdown functionality from chat features
@@ -28,19 +27,23 @@
   - Two-column layout (management left, preview right)
   - Real-time markdown preview
   - Improved error handling and user feedback
-
-## Next Up
-- [ ] Streamline core functionality
-  - Remove paragraph filtering
-  - Move download button to sidebar
-  - Remove chat-related features
-  - Improve UI organization
-- [ ] Add URL validation improvements
-- [ ] Enhance markdown formatting options
-
-## Completed
 - [x] Add flexible content filtering options
   - Added class-based filtering with multiselect
   - Added element-based filtering with multiselect
   - Improved UI with clear section headers
   - Last updated: 2/1/2025, 10:07 PM
+
+## Next Up
+- [x] Update Copy to clipboard
+  - Replaced JavaScript clipboard with pyperclip
+  - Added error handling for clipboard operations
+  - Last updated: 2/3/2025, 10:00 PM
+
+- [x] Streamline core functionality
+  - Remove paragraph filtering
+  - Move download button to sidebar
+  - Remove chat-related features
+  - Improve UI organization
+- [ ] Add URL validation improvements
+- [ ] Add intelligent URL selector  ( based on URL context )
+- [ ] Enhance markdown formatting with LLMs
