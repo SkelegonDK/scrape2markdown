@@ -23,7 +23,7 @@
 ### Required Libraries
 - `streamlit`: Web application framework
   - Provides UI components and state management
-  - Handles file downloads and clipboard operations
+  - Handles file downloads
 - `beautifulsoup4`: HTML parsing
   - Extracts content from web pages
   - Supports element and class-based filtering
@@ -33,6 +33,9 @@
 - `markdownify`: HTML to markdown conversion
   - Converts HTML content to clean markdown
   - Preserves important formatting
+- `pyperclip`: Cross-platform clipboard operations
+  - Provides native clipboard functionality
+  - Handles copying text to system clipboard
 
 ## Virtual Environments
 It's recommended to use a virtual environment for this project:
@@ -54,4 +57,4 @@ source venv/bin/activate
 
 3. Install required packages:
 ```bash
-pip install streamlit beautifulsoup4 requests markdownify
+pip install streamlit beautifulsoup4 requests markdownify pyperclip
