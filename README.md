@@ -34,7 +34,7 @@ source venv/bin/activate
 
 3. Install required packages:
 ```bash
-pip install streamlit beautifulsoup4 requests markdownify
+pip install streamlit beautifulsoup4 requests markdownify pyperclip
 ```
 
 ## Usage
@@ -92,6 +92,7 @@ The project maintains several key documentation files:
   - `beautifulsoup4`: HTML parsing
   - `requests`: HTTP requests
   - `markdownify`: HTML to markdown conversion
+  - `pyperclip`: Cross-platform clipboard operations
 
 ## Data Flow
 1. Document Collection:
