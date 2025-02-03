@@ -2,114 +2,37 @@
 
 ## Frontend
 - Streamlit web interface
-- Two-column layout for URL management and content preview
+- Two-column layout:
+  - Left sidebar: URL management and filtering controls
+  - Right main area: Content preview
 - Support for multiple URL processing
-- Markdown preview functionality
-- Word count statistics
+- Real-time markdown preview
+- Export options in sidebar
 
 ## Backend
 - Python-based processing pipeline
 - HTML scraping and markdown conversion
-- AI-powered content refinement using Ollama
+- Content filtering system
 - File saving capabilities
 
 ## APIs
-- LangChain for AI orchestration and model integration
 - BeautifulSoup for HTML parsing
 - Markdownify for HTML to markdown conversion
 
 ## Libraries and packages
-
-### LangChain Integration
-LangChain provides a framework for developing applications powered by language models, with built-in support for Ollama integration.
-
-#### Prerequisites
-1. Ollama Installation
-   - Ollama must be installed and running on your system
-   - Visit [Ollama.com](https://ollama.com) for installation instructions
-
-2. Models
-   - The application dynamically fetches available models from your Ollama installation
-   - Default model: `llama3.2:latest`
-   - You can install additional models using: `ollama pull <model-name>`
-   - Models can be selected from the sidebar in the application
-   - Automatic fallback to default model if selected model is unavailable
-
-#### Installation
-```bash
-pip install langchain-core langchain-ollama
-```
-
-#### Usage in Our Application
-We use LangChain with Ollama for AI-powered markdown refinement:
-
-```python
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_ollama.llms import OllamaLLM
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.callbacks.base import BaseCallbackHandler
-
-def process_with_deepseek(text):
-    """Process markdown text with deepseek model for refinement using Langchain"""
-    try:
-        # Create text splitter for handling large documents
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=4000,
-            chunk_overlap=200,
-            length_function=len,
-        )
-
-        # Split text into chunks
-        chunks = text_splitter.split_text(text)
-
-        # Create Ollama model instance with LangChain
-        llm = OllamaLLM(
-            model="deepseek-coder:6.7b",
-            temperature=0.7,
-        )
-
-        # Create prompt template
-        prompt = ChatPromptTemplate.from_template(
-            """Please refine and clean up this markdown documentation..."""
-        )
-
-        # Process chunks with streaming
-        chain = prompt | llm
-        response = chain.invoke(
-            {"text": chunk},
-            config={"callbacks": [StreamHandler(output_placeholder)]}
-        )
-
-        return response
-
-    except Exception as e:
-        st.error(f"Error processing with AI: {str(e)}")
-        return None
-```
-
-#### Key Features
-- Dynamic model selection from installed Ollama models
-- Text splitting for large documents
-- Streaming token output
-- Progress tracking
-- Context window management in sidebar
-- Chunk overlap for better context preservation
-
-#### Model Selection
-The application integrates with the Ollama API to provide dynamic model selection:
-- Available models are fetched from `http://localhost:11434/api/tags`
-- Models can be selected from the AI Settings sidebar
-- Context window settings are also available in the sidebar for fine-tuning
-- Error handling for model availability:
-  - Tests model availability before processing
-  - Falls back to default model (llama3.2:latest) if selected model fails
-  - Provides clear error messages and status updates
-
-### Other Required Libraries
+### Required Libraries
 - `streamlit`: Web application framework
+  - Provides UI components and state management
+  - Handles file downloads and clipboard operations
 - `beautifulsoup4`: HTML parsing
+  - Extracts content from web pages
+  - Supports element and class-based filtering
 - `requests`: HTTP requests
+  - Fetches content from URLs
+  - Handles timeouts and errors
 - `markdownify`: HTML to markdown conversion
+  - Converts HTML content to clean markdown
+  - Preserves important formatting
 
 ## Virtual Environments
 It's recommended to use a virtual environment for this project:
@@ -131,4 +54,4 @@ source venv/bin/activate
 
 3. Install required packages:
 ```bash
-pip install streamlit beautifulsoup4 requests markdownify langchain-core langchain-ollama
+pip install streamlit beautifulsoup4 requests markdownify

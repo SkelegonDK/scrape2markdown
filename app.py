@@ -123,14 +123,6 @@ with st.sidebar:
         help="These elements and all their children will be removed. Leave empty to keep all.",
     )
 
-    # Optional: Paragraph length filtering
-    st.markdown("**Paragraph Filtering**")
-    paragraph_filter = st.selectbox(
-        "Filter paragraphs by length",
-        ["None", "Remove Long Paragraphs", "Remove Short Paragraphs"],
-        help="Filter paragraphs based on text length",
-    )
-
     st.markdown("---")
 
     # URL input and management
@@ -185,15 +177,6 @@ with st.sidebar:
                             if filtered_soup is not None:
                                 soup = filtered_soup
 
-                        # Apply paragraph filtering if selected
-                        if paragraph_filter == "Remove Long Paragraphs":
-                            for p in soup.find_all("p"):
-                                if len(p.text.strip()) > 200:
-                                    p.decompose()
-                        elif paragraph_filter == "Remove Short Paragraphs":
-                            for p in soup.find_all("p"):
-                                if len(p.text.strip()) < 50:
-                                    p.decompose()
                         markdown_text = markdownify(str(soup))
                         combined_markdown += (
                             f"\n\n## Content from {url}\n\n{markdown_text}"
@@ -208,6 +191,20 @@ with st.sidebar:
             if combined_markdown:
                 st.session_state.original_markdown = combined_markdown
                 st.success("URLs processed successfully!")
+
+                # Clean markdown by removing URL headers
+                clean_markdown = re.sub(
+                    r"\n*## Content from https?://[^\n]*\n*",
+                    "\n",
+                    st.session_state.original_markdown,
+                )
+                # Download button
+                st.download_button(
+                    label="Download Markdown",
+                    data=clean_markdown,
+                    file_name=f"page_to_markdown_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
+                    mime="text/markdown",
+                )
         else:
             st.warning("Please add URLs to the list first")
 
@@ -217,38 +214,15 @@ if st.session_state.original_markdown:
     # Preview the markdown
     st.markdown(st.session_state.original_markdown)
 
-    # Actions
-    col1_action, col2_action, col3_action = st.columns(3)
-
     # Copy to clipboard button
-    with col1_action:
-        if st.button("Copy to Clipboard"):
-            st.write(
-                "<script>navigator.clipboard.writeText(`"
-                + st.session_state.original_markdown.replace("`", "\\`")
-                + "`);</script>",
-                unsafe_allow_html=True,
-            )
-            st.success("Copied to clipboard!")
-
-    # Download button
-    with col2_action:
-        # Clean markdown by removing URL headers
-        clean_markdown = re.sub(
-            r"\n*## Content from https?://[^\n]*\n*",
-            "\n",
-            st.session_state.original_markdown,
+    if st.button("Copy to Clipboard"):
+        st.write(
+            "<script>navigator.clipboard.writeText(`"
+            + st.session_state.original_markdown.replace("`", "\\`")
+            + "`);</script>",
+            unsafe_allow_html=True,
         )
-        st.download_button(
-            label="Download Markdown",
-            data=clean_markdown,
-            file_name=f"page_to_markdown_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
-            mime="text/markdown",
-        )
-
-    # Chat link
-    with col3_action:
-        st.link_button("Chat with Content", "Chat")
+        st.success("Copied to clipboard!")
 
 else:
     st.info("Process some URLs to see the markdown preview.")

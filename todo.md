@@ -1,10 +1,10 @@
 # Status
 
 ## Current Goals
-- Priority 1: Implement chat interface with Ollama integration
-- Priority 2: Maintain and improve page-to-markdown functionality
+- Priority 1: Streamline URL collection and markdown conversion
+- Priority 2: Improve user interface and workflow
 - Priority 3: Enhance export and preview features
-- Milestone: Create interactive markdown conversion and chat tool
+- Milestone: Create focused markdown conversion tool
 
 ## Developer Tasks (Require approval to modify)
 - [ ] Task assigned to developer
@@ -30,14 +30,11 @@
   - Improved error handling and user feedback
 
 ## Next Up
-- [ ] Fix element filtering error
-  - Resolve TypeError in element-based filtering
-  - Improve error handling for edge cases
-- [ ] Implement chat interface with Ollama
-  - Set up Langchain with Ollama integration
-  - Add chat UI components
-  - Implement streaming responses
-  - Add chat history management
+- [ ] Streamline core functionality
+  - Remove paragraph filtering
+  - Move download button to sidebar
+  - Remove chat-related features
+  - Improve UI organization
 - [ ] Add URL validation improvements
 - [ ] Enhance markdown formatting options
 
