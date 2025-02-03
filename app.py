@@ -1,5 +1,5 @@
 from datetime import datetime
-
+import re
 import requests
 import streamlit as st
 from bs4 import BeautifulSoup
@@ -40,28 +40,35 @@ DEFAULT_FILTER_ELEMENTS = [
 ]
 
 
-def filter_elements(soup, filter_classes=None, filter_elements=None):
+def filter_html_elements(
+    soup: BeautifulSoup,
+    filter_classes: list[str] | str | None = None,
+    filter_elements: list[str] | str | None = None,
+) -> BeautifulSoup | None:
     """
     Filter elements from soup using find_all and remove specified tags
 
-    :param soup: BeautifulSoup object
-    :param filter_classes: List of CSS classes to filter
-    :param filter_elements: List of tag names to filter and remove
+    Args:
+        soup: BeautifulSoup object to filter
+        filter_classes: List of CSS classes or single class to filter out
+        filter_elements: List of HTML tag names or single tag to filter out
+
+    Returns:
+        BeautifulSoup: Filtered soup object
     """
     if not soup:
         return soup
 
-    # Normalize inputs
-    filter_classes = filter_classes or []
-    filter_elements = filter_elements or []
+    # Convert inputs to lists
+    if filter_classes is None:
+        filter_classes = []
+    elif isinstance(filter_classes, str):
+        filter_classes = [filter_classes]
 
-    # Convert single strings to lists
-    filter_classes = (
-        [filter_classes] if isinstance(filter_classes, str) else filter_classes
-    )
-    filter_elements = (
-        [filter_elements] if isinstance(filter_elements, str) else filter_elements
-    )
+    if filter_elements is None:
+        filter_elements = []
+    elif isinstance(filter_elements, str):
+        filter_elements = [filter_elements]
 
     try:
         # Remove specified elements
@@ -103,14 +110,14 @@ with st.sidebar:
     st.subheader("Content Filtering")
 
     # Filter by class
-    filter_classes = st.multiselect(
+    selected_filter_classes = st.multiselect(
         "Filter out elements with these classes",
         options=DEFAULT_FILTER_CLASSES,
         help="Elements with these classes will be removed. Leave empty to keep all.",
     )
 
     # Filter by element type
-    filter_elements = st.multiselect(
+    selected_filter_elements = st.multiselect(
         "Filter out these HTML elements (including children)",
         options=DEFAULT_FILTER_ELEMENTS,
         help="These elements and all their children will be removed. Leave empty to keep all.",
@@ -171,10 +178,12 @@ with st.sidebar:
                         response.raise_for_status()  # Handle HTTP errors
                         soup = BeautifulSoup(response.content, "html.parser")
                         # Apply filtering
-                        if filter_classes or filter_elements:
-                            soup = filter_elements(
-                                soup, filter_classes, filter_elements
+                        if selected_filter_classes or selected_filter_elements:
+                            filtered_soup = filter_html_elements(
+                                soup, selected_filter_classes, selected_filter_elements
                             )
+                            if filtered_soup is not None:
+                                soup = filtered_soup
 
                         # Apply paragraph filtering if selected
                         if paragraph_filter == "Remove Long Paragraphs":
@@ -224,9 +233,15 @@ if st.session_state.original_markdown:
 
     # Download button
     with col2_action:
+        # Clean markdown by removing URL headers
+        clean_markdown = re.sub(
+            r"\n*## Content from https?://[^\n]*\n*",
+            "\n",
+            st.session_state.original_markdown,
+        )
         st.download_button(
             label="Download Markdown",
-            data=st.session_state.original_markdown,
+            data=clean_markdown,
             file_name=f"page_to_markdown_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
             mime="text/markdown",
         )
