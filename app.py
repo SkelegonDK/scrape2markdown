@@ -7,27 +7,6 @@ from bs4 import BeautifulSoup
 from markdownify import markdownify
 
 
-# Common filtering options
-DEFAULT_FILTER_CLASSES = [
-    "nav",
-    "navbar",
-    "navigation",
-    "menu",
-    "sidebar",
-    "breadcrumb",
-    "pagination",
-    "toc",
-    "table-of-contents",
-    "header-nav",
-    "footer-nav",
-    "social-nav",
-    "utility-nav",
-    "site-nav",
-    "main-nav",
-    "sub-nav",
-    "mobile-nav",
-]
-
 DEFAULT_FILTER_ELEMENTS = [
     "nav",
     "header",
@@ -95,11 +74,30 @@ def filter_html_elements(
 # Configure the app for wide mode
 st.set_page_config(layout="wide")
 
+
+def get_all_classes(soup: BeautifulSoup) -> list[str]:
+    """
+    Extract all unique class names from a BeautifulSoup object
+
+    Args:
+        soup: BeautifulSoup object to analyze
+
+    Returns:
+        list[str]: Sorted list of unique class names
+    """
+    classes = set()
+    for element in soup.find_all(class_=True):
+        classes.update(element.get("class", []))
+    return sorted(classes)
+
+
 # Initialize session state variables if they don't exist
 if "urls" not in st.session_state:
     st.session_state.urls = []
 if "original_markdown" not in st.session_state:
     st.session_state.original_markdown = ""
+if "available_classes" not in st.session_state:
+    st.session_state.available_classes = []
 
 # Streamlit app title
 
@@ -109,11 +107,13 @@ with st.sidebar:
     st.title("Page2Markdown")
     st.subheader("Content Filtering")
 
+    # Analyze Classes button
+
     # Filter by class
     selected_filter_classes = st.multiselect(
         "Filter out elements with these classes",
-        options=DEFAULT_FILTER_CLASSES,
-        help="Elements with these classes will be removed. Leave empty to keep all.",
+        options=st.session_state.available_classes,
+        help="Elements with these classes will be removed. Click 'Analyze Classes' to update the list.",
     )
 
     # Filter by element type
@@ -127,7 +127,7 @@ with st.sidebar:
 
     # URL input and management
     url = st.text_input("Enter URL", placeholder="https://example.com")
-    col1_btn, col2_btn = st.columns(2)
+    col1_btn, col2_btn, col3_btn = st.columns(3)
 
     with col1_btn:
         if st.button("Add URL"):
@@ -144,7 +144,27 @@ with st.sidebar:
         if st.button("Clear All"):
             st.session_state.urls = []
             st.session_state.original_markdown = ""
-            st.success("Cleared all URLs")
+            st.session_state.available_classes = []
+            st.success("Cleared all URLs and analyzed classes")
+
+    with col3_btn:
+        if st.button("Analyze Classes"):
+            if st.session_state.urls:
+                all_classes = set()
+                with st.spinner("Analyzing classes in URLs..."):
+                    for url in st.session_state.urls:
+                        try:
+                            response = requests.get(url, timeout=10)
+                            response.raise_for_status()
+                            soup = BeautifulSoup(response.content, "html.parser")
+                            all_classes.update(get_all_classes(soup))
+                        except Exception as e:
+                            st.error(f"Error analyzing {url}: {str(e)}")
+
+                    st.session_state.available_classes = sorted(all_classes)
+                    st.success(f"Found {len(all_classes)} unique classes")
+            else:
+                st.warning("Please add URLs to analyze")
 
     # URL List
     st.write("**URL List:**")
@@ -205,6 +225,13 @@ with st.sidebar:
                     file_name=f"page_to_markdown_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
                     mime="text/markdown",
                 )
+                # Copy to clipboard button
+                if st.button("Copy to Clipboard"):
+                    try:
+                        pyperclip.copy(st.session_state.original_markdown)
+                        st.success("Text copied successfully!")
+                    except Exception as e:
+                        st.error(f"Failed to copy to clipboard: {str(e)}")
         else:
             st.warning("Please add URLs to the list first")
 
@@ -215,12 +242,12 @@ if st.session_state.original_markdown:
     st.markdown(st.session_state.original_markdown)
 
     # Copy to clipboard button
-    if st.button("Copy to Clipboard"):
-        try:
-            pyperclip.copy(st.session_state.original_markdown)
-            st.success("Text copied successfully!")
-        except Exception as e:
-            st.error(f"Failed to copy to clipboard: {str(e)}")
+    # if st.button("Copy to Clipboard"):
+    #     try:
+    #         pyperclip.copy(st.session_state.original_markdown)
+    #         st.success("Text copied successfully!")
+    #     except Exception as e:
+    #         st.error(f"Failed to copy to clipboard: {str(e)}")
 
 else:
     st.info("Process some URLs to see the markdown preview.")
