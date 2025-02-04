@@ -19,7 +19,7 @@ A streamlined tool for converting web pages to markdown format, designed specifi
 ### Setup
 1. Create a virtual environment:
 ```bash
-python -m venv Scrape2Markdown
+python -m venv venv
 ```
 
 2. Activate the virtual environment:
