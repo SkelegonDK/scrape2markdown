@@ -20,6 +20,51 @@ DEFAULT_FILTER_ELEMENTS = [
 ]
 
 
+# Add new function to find relevant subpages
+def find_relevant_subpages(base_url: str) -> list[str]:
+    """
+    Discover relevant subpages from a base URL by analyzing links
+
+    Args:
+        base_url: The starting URL to crawl
+
+    Returns:
+        list[str]: List of absolute URLs for relevant subpages
+    """
+    try:
+        response = requests.get(base_url, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, "html.parser")
+
+        subpages = []
+        base_domain = re.match(r"https?://[^/]+", base_url).group(0)
+
+        for link in soup.find_all("a", href=True):
+            href = link["href"]
+
+            # Skip non-http links and external domains
+            if href.startswith("javascript:") or href.startswith("mailto:"):
+                continue
+
+            # Convert relative URLs to absolute
+            if href.startswith("/"):
+                absolute_url = base_domain + href
+            elif href.startswith(base_domain):
+                absolute_url = href
+            else:
+                continue  # Skip external links
+
+            # Simple heuristic: links containing meaningful paths
+            if re.match(r"/[a-z0-9-]+(/[a-z0-9-]+)*/?$", href, re.I):
+                subpages.append(absolute_url)
+
+        return sorted(list(set(subpages)))
+
+    except Exception as e:
+        st.error(f"Error finding subpages: {str(e)}")
+        return []
+
+
 def filter_html_elements(
     soup: BeautifulSoup,
     filter_classes: list[str] | str | None = None,
@@ -127,44 +172,48 @@ with st.sidebar:
 
     # URL input and management
     url = st.text_input("Enter URL", placeholder="https://example.com")
-    col1_btn, col2_btn, col3_btn = st.columns(3)
 
-    with col1_btn:
-        if st.button("Add URL"):
-            if url:
-                if url not in st.session_state.urls:
-                    st.session_state.urls.append(url)
-                    st.success(f"Added URL: {url}")
-                else:
-                    st.warning("URL already in list")
-            else:
-                st.warning("Please enter a valid URL")
+    # Add subpage discovery section
+    if url and st.button("Find Subpages"):
+        with st.spinner("Discovering relevant subpages..."):
+            discovered = find_relevant_subpages(url)
+            st.session_state.discovered_subpages = discovered[:10]  # Limit to top 10
+            st.session_state.selected_subpages = []
 
-    with col2_btn:
-        if st.button("Clear All"):
-            st.session_state.urls = []
-            st.session_state.original_markdown = ""
-            st.session_state.available_classes = []
-            st.success("Cleared all URLs and analyzed classes")
+    if (
+        "discovered_subpages" in st.session_state
+        and st.session_state.discovered_subpages
+    ):
+        st.subheader("Discovered Subpages")
 
-    with col3_btn:
-        if st.button("Analyze Classes"):
-            if st.session_state.urls:
-                all_classes = set()
-                with st.spinner("Analyzing classes in URLs..."):
-                    for url in st.session_state.urls:
-                        try:
-                            response = requests.get(url, timeout=10)
-                            response.raise_for_status()
-                            soup = BeautifulSoup(response.content, "html.parser")
-                            all_classes.update(get_all_classes(soup))
-                        except Exception as e:
-                            st.error(f"Error analyzing {url}: {str(e)}")
+        # Replace checkbox list with multiselect
+        selected_subpages = st.multiselect(
+            "Select subpages to add:",
+            options=st.session_state.discovered_subpages,
+            default=st.session_state.selected_subpages,
+            key="subpage_selector",
+            help="Search and select multiple subpages using fuzzy matching",
+            label_visibility="collapsed",
+        )
 
-                    st.session_state.available_classes = sorted(all_classes)
-                    st.success(f"Found {len(all_classes)} unique classes")
-            else:
-                st.warning("Please add URLs to analyze")
+        # Update selected subpages in session state
+        st.session_state.selected_subpages = selected_subpages
+
+        col_add_all, col_clear = st.columns(2)
+        with col_add_all:
+            if st.button("Add Selected"):
+                new_urls = [
+                    url for url in selected_subpages if url not in st.session_state.urls
+                ]
+                st.session_state.urls.extend(new_urls)
+                if new_urls:
+                    st.success(f"Added {len(new_urls)} new URLs")
+                st.rerun()
+        with col_clear:
+            if st.button("Clear Subpages"):
+                del st.session_state.discovered_subpages
+                del st.session_state.selected_subpages
+                st.rerun()
 
     # URL List
     st.write("**URL List:**")

@@ -1,5 +1,10 @@
 # Status
 
+- Discover other pages at the same level.
+- Add URL validation
+- run find relevant pages in the list of URLs, rather than just the current page. Change the button to "Find Relevant Pages"
+- Add css class filtering by scanning the page for all classes, and then filtering by class.
+
 ## Current Goals
 - Priority 1: Streamline URL collection and markdown conversion
 - Priority 2: Add URLs based on links in URL
