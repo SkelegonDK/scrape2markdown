@@ -118,14 +118,14 @@ with st.sidebar:
 
     # Filter by class
     selected_filter_classes: list[str] = st.multiselect(
-        "Filter out elements with these classes",
+        "Filter out elements with these CSS classes",
         options=st.session_state.available_classes,
-        help="Elements with these classes will be removed. Click 'Analyze Classes' to update the list.",
+        help="HTML Elements with these CSS classes will be removed. Click 'Analyze Classes' to update the list.",
     )
 
     # Filter by element type
     selected_filter_elements: list[str] = st.multiselect(
-        "Filter out these HTML elements (including children)",
+        "Filter out these HTML elements",
         options=DEFAULT_FILTER_ELEMENTS,
         help="These elements and all their children will be removed. Leave empty to keep all.",
     )
