@@ -117,14 +117,14 @@ with st.sidebar:
     # Analyze Classes button
 
     # Filter by class
-    selected_filter_classes = st.multiselect(
+    selected_filter_classes: list[str] = st.multiselect(
         "Filter out elements with these classes",
         options=st.session_state.available_classes,
         help="Elements with these classes will be removed. Click 'Analyze Classes' to update the list.",
     )
 
     # Filter by element type
-    selected_filter_elements = st.multiselect(
+    selected_filter_elements: list[str] = st.multiselect(
         "Filter out these HTML elements (including children)",
         options=DEFAULT_FILTER_ELEMENTS,
         help="These elements and all their children will be removed. Leave empty to keep all.",
@@ -133,19 +133,44 @@ with st.sidebar:
     st.markdown("---")
 
     # URL input and management
-    url = st.text_input("Enter URL", placeholder="https://example.com")
+    url = st.text_input(
+        "Enter URLs (separate by spaces)",
+        placeholder="https://example1.com https://example2.com",
+    )
     col1_btn, col2_btn, col3_btn = st.columns(3)
 
     with col1_btn:
-        if st.button("Add URL"):
+        if st.button("Add URLs"):
             if url:
-                if url not in st.session_state.urls:
-                    st.session_state.urls.append(url)
-                    st.success(f"Added URL: {url}")
+                # Split URLs by spaces and filter empty strings
+                urls = [u.strip() for u in url.split() if u.strip()]
+
+                if urls:
+                    added = []
+                    skipped = []
+                    invalid = []
+
+                    for u in urls:
+                        # Basic URL validation
+                        if not u.startswith(("http://", "https://")):
+                            invalid.append(u)
+                        elif u not in st.session_state.urls:
+                            st.session_state.urls.append(u)
+                            added.append(u)
+                        else:
+                            skipped.append(u)
+
+                    # Show appropriate messages
+                    if added:
+                        st.success(f"Added {len(added)} URLs")
+                    if skipped:
+                        st.warning(f"Skipped {len(skipped)} duplicate URLs")
+                    if invalid:
+                        st.error(f"Invalid URLs: {', '.join(invalid)}")
                 else:
-                    st.warning("URL already in list")
+                    st.warning("Please enter valid URLs")
             else:
-                st.warning("Please enter a valid URL")
+                st.warning("Please enter at least one URL")
 
     with col2_btn:
         if st.button("Clear All"):
