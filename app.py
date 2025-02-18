@@ -82,6 +82,50 @@ def filter_html_elements(
 st.set_page_config(layout="wide")
 
 
+def analyze_subdomains(domain: str) -> list[str]:
+    """
+    Analyzes a domain and returns a list of subdomain URLs.
+
+    Args:
+        domain: The domain to analyze.
+
+    Returns:
+        list[str]: A list of subdomain URLs.
+    """
+    try:
+        if not domain.startswith(("https://", "http://")):
+            domain = f"https://{domain}"
+        response = requests.get(domain, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, "html.parser")
+        links = [a["href"] for a in soup.find_all("a", href=True)]
+        subdomain_urls = [
+            link for link in links if link.startswith(domain) and link != domain
+        ]
+        return subdomain_urls
+    except Exception as e:
+        st.error(f"Error analyzing {domain}: {str(e)}")
+        return []
+
+
+def display_subdomain_urls(subdomain_urls: list[str]) -> list[str]:
+    """
+    Displays a list of subdomain URLs in a multiselect component and returns the selected URLs.
+
+    Args:
+        subdomain_urls: A list of subdomain URLs.
+
+    Returns:
+        list[str]: A list of selected URLs.
+    """
+    selected_urls = st.multiselect(
+        "Select subdomain URLs to add",
+        options=subdomain_urls,
+        help="Select the subdomain URLs you want to add to the list.",
+    )
+    return selected_urls
+
+
 def get_all_classes(soup: BeautifulSoup) -> list[str]:
     """
     Extract all unique class names from a BeautifulSoup object
@@ -132,10 +176,37 @@ with st.sidebar:
 
     st.markdown("---")
 
+    # Subdomain analysis
+    st.subheader("Subdomain Analysis")
+    domain = st.text_input(
+        "Enter domain to analyze",
+        placeholder="example.com",
+        disabled=st.session_state.get("domain_analyzed", False),
+    )
+
+    if st.button(
+        "Analyze Subdomains", disabled=st.session_state.get("domain_analyzed", False)
+    ):
+        if domain:
+            subdomain_urls = analyze_subdomains(f"https://{domain}")
+            if subdomain_urls:
+                selected_subdomain_urls = display_subdomain_urls(subdomain_urls)
+                st.session_state.urls.extend(selected_subdomain_urls)
+                st.session_state.domain_analyzed = True
+                st.success(f"Added {len(selected_subdomain_urls)} subdomain URLs")
+                st.rerun()
+            else:
+                st.warning("No subdomains found or error analyzing domain.")
+        else:
+            st.warning("Please enter a domain to analyze.")
+
+    st.markdown("---")
+
     # URL input and management
     url = st.text_input(
         "Enter URLs (separate by spaces)",
         placeholder="https://example1.com https://example2.com",
+        disabled=st.session_state.get("domain_analyzed", False),
     )
     col1_btn, col2_btn, col3_btn = st.columns(3)
 
