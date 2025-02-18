@@ -1,0 +1,138 @@
+# Cline Rules: Scrape2Markdown
+
+## Project Patterns
+
+### Code Style
+1. Python formatting:
+   - Use type hints for function parameters
+   - Document functions with docstrings
+   - Use clear variable names (e.g., filter_classes, filter_elements)
+
+2. Error handling:
+   - Always wrap external operations (requests, file operations) in try/except
+   - Provide user feedback through st.error()
+   - Include specific error messages
+
+3. State management:
+   - Use st.session_state for persistent data
+   - Initialize state variables at startup
+   - Clear state when appropriate (e.g., "Clear All" operation)
+
+### Implementation Paths
+1. URL Processing:
+   ```python
+   # Pattern: URL validation and addition
+   if url:
+       urls = [u.strip() for u in url.split() if u.strip()]
+       if urls:
+           added = []
+           skipped = []
+           invalid = []
+           # Process URLs...
+   ```
+
+2. Content Filtering:
+   ```python
+   # Pattern: Filter application
+   if filter_classes or filter_elements:
+       filtered_soup = filter_html_elements(
+           soup, 
+           filter_classes, 
+           filter_elements
+       )
+   ```
+
+### UI Organization
+1. Layout structure:
+   - Sidebar: Controls and management
+   - Main area: Content preview
+   - Clear section headers
+   - Logical grouping of related controls
+
+2. User feedback:
+   - Success messages for completed operations
+   - Warning messages for potential issues
+   - Error messages for failures
+   - Clear action confirmations
+
+## Project Intelligence
+
+### Critical Paths
+1. URL Processing Pipeline:
+   - URL input → validation → list management → content fetching
+   - Maintain order for proper error handling
+   - Allow batch operations
+
+2. Content Processing Pipeline:
+   - Fetch → parse → filter → convert → preview
+   - Each step must handle errors gracefully
+   - Maintain state through process
+
+### Known Challenges
+1. Performance considerations:
+   - Large documents may impact preview
+   - Multiple URLs increase processing time
+   - Memory usage with many documents
+
+2. Browser variations:
+   - Clipboard operations differ
+   - Preview rendering may vary
+   - Error handling needs to be browser-aware
+
+### Evolution Notes
+1. [2/1/2025] Core separation:
+   - Removed chat/AI features
+   - Focused on conversion
+   - Simplified interface
+
+2. [2/3/2025] Streamlining:
+   - Improved clipboard handling
+   - Enhanced UI organization
+   - Optimized filtering
+
+## Tool Usage Patterns
+
+### Streamlit
+1. State management:
+   - Initialize at startup
+   - Update atomically
+   - Clear when needed
+
+2. UI components:
+   - Use multiselect for filters
+   - Implement clear feedback
+   - Maintain consistent layout
+
+### BeautifulSoup
+1. Parsing patterns:
+   - Use html.parser
+   - Handle malformed HTML
+   - Implement careful filtering
+
+### Markdownify
+1. Conversion patterns:
+   - Clean output format
+   - Preserve structure
+   - Handle special characters
+
+## User Preferences
+1. Interface:
+   - Clear, minimal design
+   - Immediate feedback
+   - Logical workflow
+
+2. Processing:
+   - Batch operations preferred
+   - Flexible filtering options
+   - Multiple export choices
+
+## Future Considerations
+1. LLM integration:
+   - Maintain core functionality
+   - Add as enhancement
+   - Keep optional
+
+2. URL processing:
+   - Improve validation
+   - Add intelligence
+   - Maintain simplicity
