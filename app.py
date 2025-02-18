@@ -8,6 +8,7 @@ from markdownify import markdownify
 
 
 DEFAULT_FILTER_ELEMENTS = [
+    "a",
     "nav",
     "header",
     "footer",
@@ -17,6 +18,12 @@ DEFAULT_FILTER_ELEMENTS = [
     "sidebar",
     "complementary",
     "banner",
+    "form",
+    "input",
+    "textarea",
+    "select",
+    "option",
+    "button",
 ]
 
 
@@ -163,6 +170,7 @@ with st.sidebar:
 
                     st.session_state.available_classes = sorted(all_classes)
                     st.success(f"Found {len(all_classes)} unique classes")
+                    st.rerun()
             else:
                 st.warning("Please add URLs to analyze")
 
