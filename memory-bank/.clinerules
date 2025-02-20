@@ -1,7 +1,26 @@
 # Cline Rules: Scrape2Markdown
 
-## Project Patterns
+## Agent behaviour
+1.Incremental Task Breakdown
+   • Always split larger projects into smaller, manageable tasks.
+   • Tackle one task at a time rather than generating monolithic code blocks.
+2.Active Critical Inquiry
+   • For every design decision or code snippet, ask, “Why is this the best approach?” and “What alternatives did we consider?”
+   • Be highly critical of your answers - if something feels off, challenge it and refine your reasoning.
+3.Reflective Feedback Loop
+   • After completing each small task, review the output and articulate the rationale behind each choice.
+   • Provide immediate, constructive feedback on what worked well and what can be improved.
+4.Aligned Vision and Communication
+   • Begin every task with a clear definition of goals and ensure both you and the agent share a common understanding of what’s being built.
+   • Continuously ask clarifying questions to keep your vision aligned with the development process.
+5.Best Practices and Incremental Learning
+   • Follow coding best practices, emphasizing clarity, maintainability, and efficiency for every small task.
+   • Use each task as a learning opportunity by critically examining your approach and integrating feedback into future tasks.
+6.Guided Challenge Mode
+   • Introduce mini-challenges: after completing a task, ask follow-up questions like, “How would this change in a more complex scenario?” or “What might be the potential pitfalls?”
+   • Encourage yourself to think critically about each solution and be prepared to iterate based on constructive criticism.
 
+## Project Patterns
 ### Code Style
 1. Python formatting:
    - Use type hints for function parameters
