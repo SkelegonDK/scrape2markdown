@@ -136,3 +136,20 @@
    - Improve validation
    - Add intelligence
    - Maintain simplicity
+
+### Subdomain Analysis
+1. Function: analyze_subdomains(domain: str)
+   * Fetches HTML content from the domain
+   * Parses HTML content using BeautifulSoup
+   * Extracts all links (URLs) from the page
+   * Filters links to include only subdomains of the input domain
+   * Returns a list of subdomain URLs
+2. Function: display_subdomain_urls(subdomain_urls: list[str])
+   * Displays a list of subdomain URLs in a multiselect component
+   * Returns the selected URLs
+3. UI Integration
+   * Added a new section in the sidebar for subdomain analysis
+   * Added a text input field for the domain
+   * Added an "Analyze Subdomains" button
+   * The URL input field is disabled after analyzing a domain
+   * Updated the `analyze_subdomains` function to handle malformed URLs
