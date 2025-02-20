@@ -82,6 +82,64 @@ def filter_html_elements(
 st.set_page_config(layout="wide")
 
 
+def is_valid_url(url: str, base_domain: str) -> bool:
+    """
+    Validate URL with multiple checks.
+
+    Args:
+        url: URL to validate
+        base_domain: Base domain to compare against
+
+    Returns:
+        bool: Whether the URL is valid
+    """
+    try:
+        from urllib.parse import urlparse, urljoin
+        import re
+
+        # Parse the URL
+        parsed_url = urlparse(url)
+
+        # Check for valid schemes
+        if parsed_url.scheme not in ["http", "https", ""]:
+            return False
+
+        # Reject javascript, mailto, tel links
+        if parsed_url.scheme in ["javascript", "mailto", "tel"]:
+            return False
+
+        # Handle relative URLs
+        base_parsed = urlparse(base_domain)
+        if not parsed_url.netloc:
+            # Convert relative URL to absolute
+            url = urljoin(base_domain, url)
+            parsed_url = urlparse(url)
+
+        # Check domain relevance
+        # Allow subdomains of the base domain
+        if not (
+            parsed_url.netloc.endswith(base_parsed.netloc)
+            or parsed_url.netloc == base_parsed.netloc
+        ):
+            return False
+
+        # Exclude common non-content links
+        exclude_patterns = [
+            r"\.(jpg|jpeg|png|gif|pdf|css|js)$",  # Media and asset files
+            r"^#",  # Fragment identifiers
+            r"/wp-",  # WordPress admin links
+            r"/admin",  # Admin sections
+            r"/login",  # Login pages
+        ]
+
+        if any(re.search(pattern, url, re.IGNORECASE) for pattern in exclude_patterns):
+            return False
+
+        return True
+    except Exception:
+        return False
+
+
 def analyze_subdomains(domain: str) -> list[str]:
     """
     Analyzes a domain and returns a list of subdomain URLs.
@@ -93,16 +151,41 @@ def analyze_subdomains(domain: str) -> list[str]:
         list[str]: A list of subdomain URLs.
     """
     try:
+        # Ensure domain has a scheme
         if not domain.startswith(("https://", "http://")):
             domain = f"https://{domain}"
+
         response = requests.get(domain, timeout=10)
         response.raise_for_status()
         soup = BeautifulSoup(response.content, "html.parser")
-        links = [a["href"] for a in soup.find_all("a", href=True)]
-        subdomain_urls = [
-            link for link in links if link.startswith(domain) and link != domain
+
+        # Search only within nav elements and their children
+        nav_links = soup.find_all("nav")
+        subdomain_urls: set[str] = set()
+
+        st.info(f"Found {len(nav_links)} nav elements")
+
+        for nav in nav_links:
+            # Find all links within this nav element, including nested links
+            links = nav.select("a[href]")
+            st.info(f"Found {len(links)} links in nav")
+
+            for link in links:
+                href = link["href"]
+                if is_valid_url(href, domain):
+                    subdomain_urls.add(href)
+                    st.info(f"Added valid nav link: {href}")
+
+        # Convert to absolute URLs if they are relative
+        from urllib.parse import urljoin
+
+        absolute_urls = [
+            urljoin(domain, url) if not url.startswith(("http://", "https://")) else url
+            for url in subdomain_urls
         ]
-        return subdomain_urls
+
+        st.success(f"Found {len(absolute_urls)} valid subdomain URLs")
+        return absolute_urls
     except Exception as e:
         st.error(f"Error analyzing {domain}: {str(e)}")
         return []
