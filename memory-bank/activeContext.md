@@ -63,13 +63,6 @@ The project is currently focused on streamlining and enhancing the core URL proc
 ### Priority 2: URL Enhancement
 - [ ] Implement intelligent URL selector
 - [ ] Add URL context analysis
-- [x] Implement subdomain analysis
-  - Added a new section in the sidebar for subdomain analysis
-  - Added a text input field for the domain
-  - Added an "Analyze Subdomains" button
-  - Implemented the `analyze_subdomains` function to prioritize navigation links, handle invalid domains, and implement sitemap discovery
-  - Implemented the `display_subdomain_urls` function to display URLs with priority and handle potential errors
-  - Enhanced `get_link_priority` to include a bonus for descriptive link text
 
 ### Priority 3: LLM Features
 - [ ] Plan LLM integration points
